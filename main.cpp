@@ -85,7 +85,7 @@ int main(){
 	}
 
 	int transfersa = nxt();
-	cout << transfersa << endl;
+	// cout << transfersa << endl;
 	forn(i,transfersa){
 		
 		string a;
@@ -94,7 +94,7 @@ int main(){
 		split(a , ' ' , temp);
 		int start = hosttoint(temp[0]);
 		int final = hosttoint(temp[1]);
-		cout << start << " " << final << endl;
+		// cout << start << " " << final << endl;
 
 		//running the simulation
 		transfers(start,final , b_net , l_net);
