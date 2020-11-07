@@ -1,3 +1,6 @@
+// Name : Shlok Nemani and Harsh Borkar
+//reference : https://github.com/ani8897/Spanning-Tree-Protocol
+
 #include <bits/stdc++.h>
 #define vi vector<int>
 #define vvi vector< vi >
@@ -13,8 +16,10 @@ using namespace std;
 
 int nxt();
 
+// splits a string on the basis of delimiter key
 void split(string a, char key , vector<string> &b);
 
+// converts (string) H45 -> (int) 45
 int hosttoint(string a);
 
 int main(){
@@ -47,7 +52,7 @@ int main(){
 	// }
 
 	vector<Lan>l_net;
-	
+	//adding the connected bridges to the lan
 	for(auto lan_id : lan_names){
 		Lan temp;
 		temp.id = lan_id;
@@ -65,6 +70,7 @@ int main(){
 	// 	i.display();
 	// }
 
+	//runs the spanning tree protocol
 	runconfig(b_net,l_net);
 	
 	for(int k  = 0 ; k < l_net.size() ; k++){
@@ -90,6 +96,7 @@ int main(){
 		int final = hosttoint(temp[1]);
 		cout << start << " " << final << endl;
 
+		//running the simulation
 		transfers(start,final , b_net , l_net);
 
 	}
