@@ -23,7 +23,7 @@ void split(string a, char key , vector<string> &b);
 int hosttoint(string a);
 
 int main(){
-	freopen("input.txt", "r", stdin);
+	//freopen("input.txt", "r", stdin);
 	int trace_flag = nxt();
 	int n = nxt();
 	vector<Bridge>b_net;
