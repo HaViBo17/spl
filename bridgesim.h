@@ -14,6 +14,6 @@
 using namespace std;
 
 
-void runconfig(vector<Bridge> &b_net , vector<Lan> &l_net );
+void runconfig(vector<Bridge> &b_net , vector<Lan> &l_net ,bool );
 
-void transfers(int start , int final , vector<Bridge> &b_net , vector<Lan> &l_net );
+void transfers(int start , int final , vector<Bridge> &b_net , vector<Lan> &l_net,bool );
