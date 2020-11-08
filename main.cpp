@@ -14,6 +14,7 @@ using namespace std;
 #include "bridge.h"
 #include "bridgesim.h"
 
+//takes a line as input including the new line delimiter
 int nxt();
 
 // splits a string on the basis of delimiter key
@@ -23,9 +24,11 @@ void split(string a, char key , vector<string> &b);
 int hosttoint(string a);
 
 int main(){
-	//freopen("input.txt", "r", stdin);
+	// freopen("inp4", "r", stdin);
+	// freopen("tout4" , "w" , stdout);
 	int trace_flag = nxt();
 	int n = nxt();
+	bool tr = (trace_flag == 1 )? true : false;
 	vector<Bridge>b_net;
 	set<char>lan_names;
 	//input for spl
@@ -71,8 +74,16 @@ int main(){
 	// }
 
 	//runs the spanning tree protocol
-	runconfig(b_net,l_net);
-	
+	runconfig(b_net,l_net,tr);
+	// for(auto i : b_net){
+	// 	i.display_lans();
+	// }
+
+	// for(auto i : l_net){
+	// 	i.display();
+	// }
+	// return 0;
+
 	for(int k  = 0 ; k < l_net.size() ; k++){
 		string a;
 		getline(cin , a);
@@ -97,7 +108,8 @@ int main(){
 		// cout << start << " " << final << endl;
 
 		//running the simulation
-		transfers(start,final , b_net , l_net);
+		transfers(start,final , b_net , l_net, tr);
+		cout << endl;
 
 	}
 	
