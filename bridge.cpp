@@ -53,6 +53,14 @@ void Bridge::display(){
 	for(auto i : temp){
 		cout << "H" << i.first << " | "  << char(i.second) << endl;
 	} 
-	cout << endl;
 	
+	
+}
+void Bridge::display_lans(){
+	cout << "=========================" << endl;
+	cout << "B" << this->id << ": " ;
+	for(auto i : conn_lans){
+		cout << i << " ";
+	}
+	cout << endl;
 }
