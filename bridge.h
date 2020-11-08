@@ -35,6 +35,7 @@ public:
 	pci root_port;
 	Bridge();
 	void display();
+	void display_lans();
 };
 
 class Message{
