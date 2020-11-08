@@ -124,8 +124,8 @@ Message configuration_update(Message m,vector<Bridge>& b_net){
 	return update_msg;
 }
 
-void runconfig(vector<Bridge> &b_net , vector<Lan> &l_net ){
-	int trace = 0;
+void runconfig(vector<Bridge> &b_net , vector<Lan> &l_net ,bool trace){
+	
 	vector<Message> sent_msg,recv_msg;
 	// initialising the vector of messages
 	// sent_msg abbreviates sent_messages which are advertised by the bridges about the configuration
@@ -290,7 +290,8 @@ void runconfig(vector<Bridge> &b_net , vector<Lan> &l_net ){
 
 }
 
-void transfers(int start , int final , vector<Bridge> &b_net , vector<Lan> &l_net ){
+void transfers(int start , int final , vector<Bridge> &b_net , vector<Lan> &l_net ,bool tr){
+	
 	Lan starting ;
 	//getting the starting (host which sends the message) lan
 	
@@ -328,143 +329,99 @@ void transfers(int start , int final , vector<Bridge> &b_net , vector<Lan> &l_ne
 		while(!sent.empty()){
 			Datagram current = sent.front();
 			sent.pop();
-			//the sign of the curr_bridge determines the type of datagram 
-			//if positive the datagram is not ment for broadcast over the lan
-			//if negative the datagram is meant for broadcast over the lan
-			if(current.curr_bridge > 0){
-				received.push(current);
-			}else{
-				//correcting the sign of curr_bridge
-				int dess = -1 * current.curr_bridge;
-				Lan l ;
-				char la = current.prev_lan_id;
-				//getting the lan_network over with the datagram is broadcasted
-				for(int j = 0 ; j < l_net.size() ; j++){
-					if(l_net[j].id == la)l = l_net[j];
-				}
-				//sending the datagram to all bridges on the network
-				for(int j = 0 ; j < l.conn_bridges.size() ; j++){
-					//making sure that the datagram is  not sent at the sending bridge
-					if(dess!= l.conn_bridges[j]){
-						current.curr_bridge = l.conn_bridges[j];
-						received.push(current);
+			int sending_bridge_id = current.curr_bridge ;
+			int current_lan_id = current.prev_lan_id ;
+			//going through the all the lan ports and the one needed
+			for(int i = 0 ; i < l_net.size() ; i++){
+				if(l_net[i].id == current_lan_id){
+					for(int j = 0 ; j < l_net[i].conn_bridges.size() ; j++){
+						//making sure that the message is not again sent to the sending bridge
+						if(l_net[i].conn_bridges[j] == sending_bridge_id){
+							continue;
+						}
+						//preparing the message to be sent to the bridges
+						Datagram send_message;
+						send_message.source = start;
+						send_message.destination = final;
+						send_message.prev_lan_id = current_lan_id ;
+						send_message.curr_bridge = l_net[i].conn_bridges[j];
+						received.push(send_message);
+						if(tr == 1){
+							cout << "r "<< l_net[i].id << " on " << send_message.curr_bridge << endl;
+						}
 					}
 				}
 			}
-
 		}
 		while(!received.empty()){
 			Datagram current = received.front();
 			received.pop();
-			for(int i = 0 ; i < b_net.size() ; i++){
-				//getting the correct bridge at which the message is received 
-				if(current.curr_bridge == b_net[i].id){
-					//checking if there is a host entry in the forwarding table
-					bool entry_in_fwd_table = false;
-					Lan to_fwd;
+			//finding the bridge for which the message is associated
+			for(int i = 0 ; i < b_net.size() ;i++){
+				if(b_net[i].id == current.curr_bridge){
+					//checking if there is a need to update the forwarding table
+					bool need_to_update = true;
 					for(int j = 0 ; j < b_net[i].forwarding_table.size() ; j++){
-						Fwd_table a = b_net[i].forwarding_table[j];
-						if(a.host_id == current.destination){
-							entry_in_fwd_table =true;
-							//entry has been found and saving the lan where it is to be forwarded
-							Lan to_fwd = a.fport;
+						Fwd_table some_entry = b_net[i].forwarding_table[j];
+						if(some_entry.host_id == current.source){
+							//there exists an entry with the source host so no need to update
+							need_to_update = false;
 						}
 					}
-					// case : there exist a entry in the forwarding table
-					if(entry_in_fwd_table){
-
-						bool done = false;
-						//checking whether there the destination host is the forwarding port lan
-						for(int j = 0 ; j < to_fwd.conn_hosts.size() ; j++){
-							if(to_fwd.conn_hosts[j] == current.destination){
-								done = true;
-								//there exist a host in the forwarding port lan 
-								//so for all bridges in the forwarding port lan checking if there is a entry of source host
-								//if there isn't then adding the appropriate entry and stopping the flow
-								for(int k = 0 ; k <to_fwd.conn_bridges.size() ; k++ ){
-									//getting through all the bridges in the network and identifying which bridges do not have a entry 
-									//of source host in their tables
-									for(int p = 0 ; p < b_net.size() ; p++){
-										//checking if entry for source host is present or not
-										bool entry_present = false;
-										for(int q = 0 ; q < b_net[p].forwarding_table.size() ; q++){
-											Fwd_table temp = b_net[p].forwarding_table[p];
-											if(temp.host_id == current.source){
-												entry_present = true;
-											}
-										}
-										//if entry is not present then adding the entry to the fwd table if and only if the bridge 
-										//is present on the fowarding lan port
-
-										if(!entry_present && b_net[p].id != b_net[i].id && b_net[p].id == to_fwd.conn_bridges[k]){
-											Fwd_table new_entry;
-											new_entry.host_id = current.source ;
-											new_entry.fport = to_fwd;
-											b_net[p].forwarding_table.pb(new_entry);
-
-										}
-									}
-
-								}
+					if(need_to_update){
+						//updating the forwarding table
+						Fwd_table new_entry; 
+						new_entry.host_id = current.source ;
+						//finding the correct lan port and then update !
+						for(int j = 0 ; j < l_net.size() ; j++){
+							if(l_net[j].id == current.prev_lan_id){
+								new_entry.fport = l_net[j];
+								break;
 							}
 						}
-						//if done is false the destination host was not in the forwarding port lan
-						//making sure that lan over which the message was received isn't the forwarding port
-						if(!done && current.prev_lan_id != to_fwd.id){
-							//broadcasting the message on all the connected bridges of the forwarding port 
-							for(int j = 0 ; j < to_fwd.conn_bridges.size() ; j++){
-								if(to_fwd.conn_bridges[j] == b_net[i].id)continue;
-								//here making sure that the receiver bridge isn't the sending bridge
-								Datagram sending;
-								sending.source = current.source;
-								sending.destination = current.destination;
-								sending.prev_lan_id = to_fwd.id;
-								sending.curr_bridge = to_fwd.conn_bridges[j];
-								sent.push(sending);
+						b_net[i].forwarding_table.push_back(new_entry);
+					}
+					//checking if there exists an entry for the destination host
+					bool forwarding_entry_present = false;
+					for(int j = 0 ; j < b_net[i].forwarding_table.size() ; j++){
+						Fwd_table some_entry = b_net[i].forwarding_table[j];
+						if(some_entry.host_id == current.destination){
+							forwarding_entry_present = true;
+							//conditions matched , there exist an entry for the forwarding host
+							if(some_entry.fport.id == current.prev_lan_id){
+								//making sure that the forwaring port is not the receiving lan
+								break;
+							}
+							//making a new message to be sent
+							Datagram send_message;
+							send_message.source = start ;
+							send_message.destination = final ;
+							send_message.prev_lan_id = some_entry.fport.id;
+							send_message.curr_bridge = b_net[i].id;
+							sent.push(send_message);
+							if(tr == 1){
+								cout << "s" << b_net[i].conn_lans[j] << "from " << b_net[i].id<< " entry present" <<endl; 
 							}
 						}
-						//reassuring that if the entry isn't present in the forwarding table then 
-						//making sure its added
-						bool entry_present = false;
-						for(int j = 0 ; j < b_net[i].forwarding_table.size() ; j++){
-							Fwd_table temp = b_net[i].forwarding_table[j];
-							if(temp.host_id == current.source){
-								entry_present= true;
-							} 
-						}
-						if(!entry_present){
-							Fwd_table new_entry;
-							new_entry.host_id = start;
-							for(int j = 0 ;j < l_net.size() ; j++){
-								if(l_net[j].id == current.prev_lan_id)new_entry.fport = l_net[j];
-
-							}
-							b_net[i].forwarding_table.pb(new_entry);
-						}
-					}else{
-						//case 2: there is no entry in the forwarding table
-						//making the new entry in the forwarding table
-						Fwd_table new_entry ;
-						new_entry.host_id = start;
-						for(int j = 0 ;j < l_net.size() ; j++){
-							if(l_net[j].id == current.prev_lan_id)new_entry.fport = l_net[j];
-						}
-						b_net[i].forwarding_table.pb(new_entry);
-
-						//now broadcasting the message to all the connected lans 
-						for(int j = 0 ; j <b_net[i].conn_lans.size() ; j++){
-							if(current.prev_lan_id == b_net[i].conn_lans[j]){
+					}
+					if(!forwarding_entry_present){
+						//no forwarding table entry found so broadcasting on all ports
+						for(int j = 0 ; j < b_net[i].conn_lans.size() ; j++){
+							//making sure that the broadcast doesn't get sent on the receiving port
+							if(b_net[i].conn_lans[j] == current.prev_lan_id){
 								continue;
 							}
-							Datagram sending;
-							sending.source = current.source;
-							sending.destination = current.destination;
-							sending.prev_lan_id = b_net[i].conn_lans[j];
-							sending.curr_bridge = -1 * b_net[i].id;
-							sent.push(sending);
+							Datagram send_message ;
+							send_message.source = start ;
+							send_message.destination = final;
+							send_message.prev_lan_id = b_net[i].conn_lans[j];
+							send_message.curr_bridge = b_net[i].id;
+							sent.push(send_message);
+							if(tr == 1){
+								cout << "s" << b_net[i].conn_lans[j] << "from " << b_net[i].id << " entry absent" <<endl; 
+							}
 						}
 					}
-
 				}
 			}
 		}
